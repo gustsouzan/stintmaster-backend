@@ -5,6 +5,7 @@ CREATE TABLE event (
     name VARCHAR(255) NOT NULL,
     platform VARCHAR(100) NOT NULL,
     duration INT NOT NULL,
+    image_url VARCHAR(500),
     date TIMESTAMP WITH TIME ZONE NOT NULL,
     created_by VARCHAR(100) NOT NULL, 
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

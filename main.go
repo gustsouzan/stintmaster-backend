@@ -5,6 +5,7 @@ import (
 	v1 "stintmaster/api/api/v1"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 )
 
@@ -16,6 +17,7 @@ func main() {
 	}
 
 	app := fiber.New()
+	app.Use(cors.New())
 	router := app.Group("/api/")
 
 	healthRouter := router.Group(healthAPI.HealthPath)
