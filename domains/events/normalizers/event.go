@@ -24,6 +24,7 @@ func EventFromPostEvent(postEvent apin.PostEvent, createdAt time.Time) (Event, e
 	t, err := time.ParseInLocation(layout, postEvent.Date, loc)
 	if err != nil {
 		log.Println("Error parsing date:", err)
+		return Event{}, err
 	}
 
 	duration, err := strconv.Atoi(postEvent.Duration)
