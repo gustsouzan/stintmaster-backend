@@ -1,6 +1,7 @@
 package pilots
 
 import (
+	"errors"
 	"log"
 	apin "stintmaster/api/api/v1/pilots/normalizers"
 	"stintmaster/api/domains/pilots/normalizers"
@@ -13,13 +14,22 @@ func CreatePilot(pilot apin.PostPilot) (id int64, err error) {
 
 	defer conn.Close()
 
-	reqPilot := normalizers.Pilot{
-		Name:       pilot.Name,
-		Age:        pilot.Age,
-		Experience: pilot.Experience,
-		Team:       pilot.Team,
-		IracingID:  pilot.IracingID,
-		CreatedBy:  pilot.CreatedBy,
+	reqPilot, err := normalizers.PostPilotToPilot(pilot)
+	if err != nil {
+		log.Println("Error normalizing pilot data:", err)
+		return 0, err
+	}
+
+	pilots, err := GetPilotByFilter(pilot)
+
+	if err != nil {
+		log.Println("Error checking existing pilots:", err)
+		return 0, err
+	}
+
+	if len(pilots) > 0 {
+		log.Println("Pilot already exists with the same name or iRacing ID")
+		return 0, errors.New("pilot already exists with the same name or iRacing ID")
 	}
 
 	id, err = postgres.CreatePilot(conn, reqPilot)
@@ -42,6 +52,26 @@ func GetPilots() (pilots []normalizers.Pilot, err error) {
 
 	if err != nil {
 		log.Println("Error getting pilots from database:", err)
+		return nil, err
+	}
+
+	return pilots, nil
+}
+
+func GetPilotByFilter(pilot apin.PostPilot) (pilots []normalizers.Pilot, err error) {
+	conn := postgres.OpenConnection()
+
+	defer conn.Close()
+
+	reqPilot, err := normalizers.PostPilotToPilot(pilot)
+	if err != nil {
+		log.Println("Error normalizing pilot data:", err)
+		return nil, err
+	}
+	pilots, err = postgres.GetPilotsByFilter(conn, reqPilot)
+
+	if err != nil {
+		log.Println("Error getting pilots by filter from database:", err)
 		return nil, err
 	}
 

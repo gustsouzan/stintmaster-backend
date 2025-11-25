@@ -1,8 +1,8 @@
 package events
 
 import (
+	"errors"
 	"log"
-	"strconv"
 	"time"
 
 	apin "stintmaster/api/api/v1/events/normalizers"
@@ -16,27 +16,31 @@ func CreateEvent(event apin.PostEvent) (id int64, err error) {
 
 	defer conn.Close()
 
-	loc := time.FixedZone("UTC-3", -3*60*60)
-	layout := "2006-01-02"
-	t, err := time.ParseInLocation(layout, event.Date, loc)
+	reqEvent, err := normalizers.EventFromPostEvent(event, time.Now())
 	if err != nil {
-		log.Println("Error parsing date:", err)
+		log.Println("Error normalizing event:", err)
 		return 0, err
 	}
 
-	duration, err := strconv.Atoi(event.Duration)
+	events, err := GetEventsByFilter(event)
+
 	if err != nil {
-		log.Println("Error parsing duration:", err)
+		log.Println("Error checking existing events:", err)
 		return 0, err
 	}
 
-	reqEvent := normalizers.Event{
-		Name:      event.Name,
-		Platform:  event.Platform,
-		Date:      t,
-		Duration:  duration,
-		CreatedBy: event.CreatedBy,
-		ImageURL:  event.ImageURL,
+	for _, e := range events {
+		if e.Name == reqEvent.Name && e.Date.Equal(reqEvent.Date) && e.Platform == reqEvent.Platform {
+			log.Println("Event already exists with the same name, date, and platform")
+			return 0, errors.New("event already exists with the same name, date, and platform")
+		}
+	}
+
+	// Limit the number of events and prevent spamming
+	log.Println("Number of events found for the given filter:", len(events))
+	if len(events) > 5 {
+		log.Println("Event limit exceeded for the given filter")
+		return 0, errors.New("event limit exceeded for the given filter")
 	}
 
 	id, err = postgres.CreateEvent(conn, reqEvent)
@@ -59,6 +63,28 @@ func GetEvents() (events []normalizers.Event, err error) {
 
 	if err != nil {
 		log.Println("Error getting events from database:", err)
+		return nil, err
+	}
+
+	return events, nil
+}
+
+func GetEventsByFilter(event apin.PostEvent) (events []normalizers.Event, err error) {
+
+	conn := postgres.OpenConnection()
+
+	defer conn.Close()
+
+	reqEvent, err := normalizers.EventFromPostEvent(event, time.Now())
+	if err != nil {
+		log.Println("Error normalizing event:", err)
+		return nil, err
+	}
+
+	events, err = postgres.GetEventsByFilter(conn, reqEvent)
+
+	if err != nil {
+		log.Println("Error getting events from database by filter:", err)
 		return nil, err
 	}
 

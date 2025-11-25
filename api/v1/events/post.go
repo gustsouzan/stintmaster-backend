@@ -32,7 +32,7 @@ func CreateEventHandler(c *fiber.Ctx) error {
 	if err != nil {
 		log.Println("Error creating event:", err)
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create event",
+			"error": err.Error(),
 		})
 	}
 
