@@ -2,6 +2,7 @@ package events
 
 import (
 	"log"
+	"strconv"
 	"time"
 
 	apin "stintmaster/api/api/v1/events/normalizers"
@@ -16,10 +17,16 @@ func CreateEvent(event apin.PostEvent) (id int64, err error) {
 	defer conn.Close()
 
 	loc := time.FixedZone("UTC-3", -3*60*60)
-	layout := "02/01/2006"
+	layout := "2006-01-02"
 	t, err := time.ParseInLocation(layout, event.Date, loc)
 	if err != nil {
 		log.Println("Error parsing date:", err)
+		return 0, err
+	}
+
+	duration, err := strconv.Atoi(event.Duration)
+	if err != nil {
+		log.Println("Error parsing duration:", err)
 		return 0, err
 	}
 
@@ -27,8 +34,9 @@ func CreateEvent(event apin.PostEvent) (id int64, err error) {
 		Name:      event.Name,
 		Platform:  event.Platform,
 		Date:      t,
-		Duration:  event.Duration,
+		Duration:  duration,
 		CreatedBy: event.CreatedBy,
+		ImageURL:  event.ImageURL,
 	}
 
 	id, err = postgres.CreateEvent(conn, reqEvent)
