@@ -38,6 +38,7 @@ func PostPilotToPilot(pilot normalizers.PostPilot) (Pilot, error) {
 		Team:       pilot.Team,
 		IracingID:  pilot.IracingID,
 		CreatedBy:  pilot.CreatedBy,
+		ImageURL:   pilot.ImageURL,
 	}
 	return reqPilot, nil
 }
