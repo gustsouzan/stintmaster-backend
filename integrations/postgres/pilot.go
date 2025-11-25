@@ -48,13 +48,19 @@ func GetPilots(conn *sql.DB) (pilots []normalizers.Pilot, err error) {
 
 func GetPilotsByFilter(conn *sql.DB, filter normalizers.Pilot) (pilots []normalizers.Pilot, err error) {
 
-	query := `SELECT id, name, age, experience, team, iracing_id, created_by, created_at FROM pilot WHERE 1=1`
+	query := `SELECT id, name, age, experience, team, iracing_id, created_by, created_at FROM pilot `
+	var conditions []string
 	var args []interface{}
-	argID := 1
 	if filter.IracingID != "" {
-		query += ` and iracing_id = $` + strconv.Itoa(argID)
+		conditions = append(conditions, `iracing_id = $`+strconv.Itoa(len(args)+1))
 		args = append(args, filter.IracingID)
-		argID++
+	}
+
+	if len(conditions) > 0 {
+		query += "WHERE " + conditions[0]
+		for i := 1; i < len(conditions); i++ {
+			query += " and " + conditions[i]
+		}
 	}
 
 	rows, err := conn.Query(query, args...)

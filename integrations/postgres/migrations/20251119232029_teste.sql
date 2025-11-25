@@ -18,6 +18,7 @@ CREATE TABLE pilot (
     experience INT NOT NULL,
     team VARCHAR(100) NOT NULL,
     iracing_id VARCHAR(100) NOT NULL,
+    image_url VARCHAR(500),
     created_by VARCHAR(100) NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

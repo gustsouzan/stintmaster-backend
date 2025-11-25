@@ -78,9 +78,16 @@ func GetEventsByFilter(conn *sql.DB, filter normalizers.Event) (events []normali
 	}
 
 	if len(conditions) > 0 {
-		query += " WHERE " + conditions[0]
-		for i := 1; i < len(conditions); i++ {
-			query += " AND " + conditions[i]
+		query += " WHERE "
+		for i := 0; i < len(conditions); i++ {
+			if i > 0 {
+				if i == len(conditions)-1 && filter.CreatedBy != "" {
+					query += " OR "
+				} else {
+					query += " AND "
+				}
+			}
+			query += conditions[i]
 		}
 	}
 	rows, err := conn.Query(query, args...)

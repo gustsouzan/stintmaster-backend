@@ -37,6 +37,7 @@ func CreateEvent(event apin.PostEvent) (id int64, err error) {
 	}
 
 	// Limit the number of events and prevent spamming
+	log.Println("Number of events found for the given filter:", len(events))
 	if len(events) > 5 {
 		log.Println("Event limit exceeded for the given filter")
 		return 0, errors.New("event limit exceeded for the given filter")
