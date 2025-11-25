@@ -52,36 +52,37 @@ func GetEvents(conn *sql.DB) (events []normalizers.Event, err error) {
 
 func GetEventsByFilter(conn *sql.DB, filter normalizers.Event) (events []normalizers.Event, err error) {
 
-	query := `SELECT id, name, platform, date, duration, image_url, created_by, created_at FROM event WHERE 1=1`
+	query := `SELECT id, name, platform, date, duration, image_url, created_by, created_at FROM event`
+	var conditions []string
 	var args []interface{}
-	argID := 1
 
 	if filter.Name != "" {
-		query += ` And (name ILIKE $` + strconv.Itoa(argID)
+		conditions = append(conditions, "name ILIKE $"+strconv.Itoa(len(args)+1))
 		args = append(args, "%"+filter.Name+"%")
-		argID++
 	}
 	if filter.Platform != "" {
-		query += ` And platform ILIKE $` + strconv.Itoa(argID)
+		conditions = append(conditions, "platform ILIKE $"+strconv.Itoa(len(args)+1))
 		args = append(args, "%"+filter.Platform+"%")
-		argID++
 	}
 	if !filter.Date.IsZero() {
-		query += ` And date = $` + strconv.Itoa(argID)
+		conditions = append(conditions, "date = $"+strconv.Itoa(len(args)+1))
 		args = append(args, filter.Date)
-		argID++
 	}
 	if filter.Duration != 0 {
-		query += ` And duration = $` + strconv.Itoa(argID) + `)`
+		conditions = append(conditions, "duration = $"+strconv.Itoa(len(args)+1))
 		args = append(args, filter.Duration)
-		argID++
 	}
 	if filter.CreatedBy != "" {
-		query += ` or created_by ILIKE $` + strconv.Itoa(argID)
+		conditions = append(conditions, "created_by ILIKE $"+strconv.Itoa(len(args)+1))
 		args = append(args, "%"+filter.CreatedBy+"%")
-		argID++
 	}
 
+	if len(conditions) > 0 {
+		query += " WHERE " + conditions[0]
+		for i := 1; i < len(conditions); i++ {
+			query += " AND " + conditions[i]
+		}
+	}
 	rows, err := conn.Query(query, args...)
 	if err != nil {
 		log.Println("Error executing query:", err)
