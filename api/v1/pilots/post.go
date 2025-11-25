@@ -28,7 +28,7 @@ func CreatePilotHandler(c *fiber.Ctx) error {
 	id, err := pilots.CreatePilot(req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"error": "Failed to create pilot",
+			"error": err.Error(),
 		})
 	}
 
