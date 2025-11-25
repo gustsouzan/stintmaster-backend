@@ -29,16 +29,17 @@ func CreateEvent(event apin.PostEvent) (id int64, err error) {
 		return 0, err
 	}
 
-	if len(events) > 5 {
-		log.Println("Event limit exceeded for the given filter")
-		return 0, errors.New("event limit exceeded for the given filter")
-	}
-
 	for _, e := range events {
 		if e.Name == reqEvent.Name && e.Date.Equal(reqEvent.Date) && e.Platform == reqEvent.Platform {
 			log.Println("Event already exists with the same name, date, and platform")
 			return 0, errors.New("event already exists with the same name, date, and platform")
 		}
+	}
+
+	// Limit the number of events and prevent spamming
+	if len(events) > 5 {
+		log.Println("Event limit exceeded for the given filter")
+		return 0, errors.New("event limit exceeded for the given filter")
 	}
 
 	id, err = postgres.CreateEvent(conn, reqEvent)
