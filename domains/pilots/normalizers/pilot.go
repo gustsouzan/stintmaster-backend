@@ -1,43 +1,25 @@
 package normalizers
 
 import (
-	"log"
 	"stintmaster/api/api/v1/pilots/normalizers"
+	"stintmaster/api/integrations/postgres/models"
 	"strconv"
 )
 
-type Pilot struct {
-	ID         int    `json:"id"`
-	Name       string `json:"name"`
-	Age        int    `json:"age"`
-	Experience int    `json:"experience"`
-	Team       string `json:"team"`
-	IracingID  string `json:"iracing_id"`
-	CreatedBy  string `json:"created_by"`
-	CreatedAt  string `json:"created_at"`
-	ImageURL   string `json:"image_url"`
-}
+func PostPilotToModal(pilot normalizers.PostPilot) (models.Piloto, error) {
 
-func PostPilotToPilot(pilot normalizers.PostPilot) (Pilot, error) {
-	age, err := strconv.Atoi(pilot.Age)
+	irating, err := strconv.Atoi(pilot.Irating)
 	if err != nil {
-		log.Println("Error converting age to integer:", err)
-		return Pilot{}, err
+		return models.Piloto{}, err
 	}
 
-	experience, err := strconv.Atoi(pilot.Experience)
-	if err != nil {
-		log.Println("Error converting experience to integer:", err)
-		return Pilot{}, err
-	}
-
-	reqPilot := Pilot{
-		Name:       pilot.Name,
-		Age:        age,
-		Experience: experience,
-		Team:       pilot.Team,
-		IracingID:  pilot.IracingID,
-		CreatedBy:  pilot.CreatedBy,
+	reqPilot := models.Piloto{
+		Nome:      pilot.Name,
+		Email:     pilot.Email,
+		IracingID: pilot.IracingID,
+		Imagem:    pilot.Image,
+		Irating:   irating,
+		CreatedBy: pilot.CreatedBy,
 	}
 	return reqPilot, nil
 }

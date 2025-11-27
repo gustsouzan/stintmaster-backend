@@ -13,7 +13,7 @@ func CreatePilotHandler(c *fiber.Ctx) error {
 	var req normalizers.PostPilot
 	if err := c.BodyParser(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "Invalid request body",
+			"error": err.Error(),
 		})
 	}
 

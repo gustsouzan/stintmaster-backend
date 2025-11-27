@@ -3,6 +3,7 @@ package main
 import (
 	healthAPI "stintmaster/api/api/health"
 	v1 "stintmaster/api/api/v1"
+	"stintmaster/api/integrations/postgres"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
@@ -10,11 +11,11 @@ import (
 )
 
 func main() {
-
 	err := godotenv.Load()
 	if err != nil {
 		panic("Error loading .env file")
 	}
+	postgres.OpenConnection()
 
 	app := fiber.New()
 	app.Use(cors.New())

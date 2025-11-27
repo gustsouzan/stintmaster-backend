@@ -8,6 +8,6 @@ const (
 
 func Register(router fiber.Router) {
 
-	router.Post("/create-pilot", CreatePilotHandler)
-	router.Get("", GetPilotsHandler)
+	router.Post("/", CreatePilotHandler)
+	router.Get("/", GetPilotsHandler)
 }
