@@ -3,61 +3,55 @@ package events
 import (
 	"errors"
 	"log"
-	"time"
 
 	apin "stintmaster/api/api/v1/events/normalizers"
 	"stintmaster/api/domains/events/normalizers"
 	"stintmaster/api/integrations/postgres"
+	"stintmaster/api/integrations/postgres/models"
 )
 
-func CreateEvent(event apin.PostEvent) (id int64, err error) {
+func CreateEvent(event apin.PostEvent) (models.Evento, error) {
 
-	conn := postgres.OpenConnection()
-
-	defer conn.Close()
-
-	reqEvent, err := normalizers.EventFromPostEvent(event, time.Now())
+	reqEvent, err := normalizers.EventFromPostEvent(event)
 	if err != nil {
 		log.Println("Error normalizing event:", err)
-		return 0, err
+		return models.Evento{}, err
 	}
 
 	events, err := GetEventsByFilter(event)
 
 	if err != nil {
 		log.Println("Error checking existing events:", err)
-		return 0, err
+		return models.Evento{}, err
 	}
 
 	if len(events) > 5 {
 		log.Println("Event limit exceeded for the given filter")
-		return 0, errors.New("event limit exceeded for the given filter")
+		return models.Evento{}, errors.New("event limit exceeded for the given filter")
 	}
 
 	for _, e := range events {
-		if e.Name == reqEvent.Name && e.Date.Equal(reqEvent.Date) && e.Platform == reqEvent.Platform {
+		if e.Nome == reqEvent.Nome && e.DataEvento.Equal(reqEvent.DataEvento) && e.Plataforma == reqEvent.Plataforma {
 			log.Println("Event already exists with the same name, date, and platform")
-			return 0, errors.New("event already exists with the same name, date, and platform")
+			return models.Evento{}, errors.New("event already exists with the same name, date, and platform")
 		}
 	}
 
-	id, err = postgres.CreateEvent(conn, reqEvent)
+	repository := postgres.NewEventRepository()
+	err = repository.CreateEvent(&reqEvent)
 
 	if err != nil {
 		log.Println("Error creating event in database:", err)
-		return 0, err
+		return models.Evento{}, err
 	}
 
-	return id, nil
+	return reqEvent, nil
 }
 
-func GetEvents() (events []normalizers.Event, err error) {
+func GetEvents() (events []models.Evento, err error) {
 
-	conn := postgres.OpenConnection()
-
-	defer conn.Close()
-
-	events, err = postgres.GetEvents(conn)
+	repository := postgres.NewEventRepository()
+	events, err = repository.GetEvents()
 
 	if err != nil {
 		log.Println("Error getting events from database:", err)
@@ -67,19 +61,16 @@ func GetEvents() (events []normalizers.Event, err error) {
 	return events, nil
 }
 
-func GetEventsByFilter(event apin.PostEvent) (events []normalizers.Event, err error) {
+func GetEventsByFilter(event apin.PostEvent) (events []models.Evento, err error) {
 
-	conn := postgres.OpenConnection()
-
-	defer conn.Close()
-
-	reqEvent, err := normalizers.EventFromPostEvent(event, time.Now())
+	reqEvent, err := normalizers.EventFromPostEvent(event)
 	if err != nil {
 		log.Println("Error normalizing event:", err)
 		return nil, err
 	}
 
-	events, err = postgres.GetEventsByFilter(conn, reqEvent)
+	repository := postgres.NewEventRepository()
+	events, err = repository.GetEventsByFilter(&reqEvent)
 
 	if err != nil {
 		log.Println("Error getting events from database by filter:", err)

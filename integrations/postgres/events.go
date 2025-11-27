@@ -1,107 +1,63 @@
 package postgres
 
 import (
-	"database/sql"
-	"log"
-	"strconv"
+	"stintmaster/api/integrations/postgres/models"
 
-	"stintmaster/api/domains/events/normalizers"
+	"github.com/gofiber/fiber/v2/log"
 )
 
-func CreateEvent(conn *sql.DB, event normalizers.Event) (id int64, err error) {
+type EventRepository struct{}
 
-	query := `INSERT INTO event (name, platform, date, duration, image_url, created_by) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
-
-	err = conn.QueryRow(query, event.Name, event.Platform, event.Date, event.Duration, event.ImageURL, event.CreatedBy).Scan(&id)
-	if err != nil {
-		log.Println("Error executing query:", err)
-		return 0, err
-	}
-
-	return id, nil
+func NewEventRepository() *EventRepository {
+	return &EventRepository{}
 }
 
-func GetEvents(conn *sql.DB) (events []normalizers.Event, err error) {
+func (r *EventRepository) CreateEvent(evento *models.Evento) (err error) {
 
-	query := `SELECT id, name, platform, date, duration, image_url, created_by, created_at FROM event`
+	result := dbInstance.Create(&evento)
+	if result.Error != nil {
+		log.Error("Error executing query:", result.Error)
+		return result.Error
+	}
 
-	rows, err := conn.Query(query)
+	return nil
+}
+
+func (r *EventRepository) GetEvents() (events []models.Evento, err error) {
+
+	err = dbInstance.Find(&events).Error
 	if err != nil {
-		log.Println("Error executing query:", err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var event normalizers.Event
-		err := rows.Scan(&event.ID, &event.Name, &event.Platform, &event.Date, &event.Duration, &event.ImageURL, &event.CreatedBy, &event.CreatedAt)
-		if err != nil {
-			log.Println("Error scanning row:", err)
-			return nil, err
-		}
-		events = append(events, event)
-	}
-
-	if err = rows.Err(); err != nil {
-		log.Println("Row iteration error:", err)
+		log.Error("Error executing query:", err)
 		return nil, err
 	}
 
 	return events, nil
 }
 
-func GetEventsByFilter(conn *sql.DB, filter normalizers.Event) (events []normalizers.Event, err error) {
+func (r *EventRepository) GetEventsByFilter(filter *models.Evento) (events []models.Evento, err error) {
 
-	query := `SELECT id, name, platform, date, duration, image_url, created_by, created_at FROM event WHERE 1=1`
-	var args []interface{}
-	argID := 1
+	db := dbInstance
 
-	if filter.Name != "" {
-		query += ` And (name ILIKE $` + strconv.Itoa(argID)
-		args = append(args, "%"+filter.Name+"%")
-		argID++
+	if filter.Nome != "" {
+		db = db.Where("nome ILIKE ?", "%"+filter.Nome+"%")
 	}
-	if filter.Platform != "" {
-		query += ` And platform ILIKE $` + strconv.Itoa(argID)
-		args = append(args, "%"+filter.Platform+"%")
-		argID++
+	if filter.Plataforma != "" {
+		db = db.Where("plataforma ILIKE ?", "%"+filter.Plataforma+"%")
 	}
-	if !filter.Date.IsZero() {
-		query += ` And date = $` + strconv.Itoa(argID)
-		args = append(args, filter.Date)
-		argID++
+	if !filter.DataEvento.IsZero() {
+		db = db.Where("data_evento = ?", filter.DataEvento)
 	}
-	if filter.Duration != 0 {
-		query += ` And duration = $` + strconv.Itoa(argID) + `)`
-		args = append(args, filter.Duration)
-		argID++
+	if filter.Duracao != 0 {
+		db = db.Where("duracao = ?", filter.Duracao)
 	}
 	if filter.CreatedBy != "" {
-		query += ` or created_by ILIKE $` + strconv.Itoa(argID)
-		args = append(args, "%"+filter.CreatedBy+"%")
-		argID++
+		db = db.Or("created_by ILIKE ?", "%"+filter.CreatedBy+"%")
 	}
 
-	rows, err := conn.Query(query, args...)
-	if err != nil {
-		log.Println("Error executing query:", err)
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var event normalizers.Event
-		err := rows.Scan(&event.ID, &event.Name, &event.Platform, &event.Date, &event.Duration, &event.ImageURL, &event.CreatedBy, &event.CreatedAt)
-		if err != nil {
-			log.Println("Error scanning row:", err)
-			return nil, err
-		}
-		events = append(events, event)
-	}
-
-	if err = rows.Err(); err != nil {
-		log.Println("Row iteration error:", err)
-		return nil, err
+	results := db.Find(&events)
+	if results.Error != nil {
+		log.Error("Error executing query:", results.Error)
+		return nil, results.Error
 	}
 
 	return events, nil

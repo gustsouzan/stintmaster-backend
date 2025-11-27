@@ -1,79 +1,55 @@
 package postgres
 
 import (
-	"database/sql"
-	"stintmaster/api/domains/pilots/normalizers"
-	"strconv"
+	"stintmaster/api/integrations/postgres/models"
+
+	"github.com/gofiber/fiber/v2/log"
 )
 
-func CreatePilot(conn *sql.DB, pilot normalizers.Pilot) (int64, error) {
+type PilotRepository struct{}
 
-	query := `INSERT INTO pilot (name, age, experience, team, iracing_id, created_by)
-			  VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
-
-	var id int64
-	err := conn.QueryRow(query, pilot.Name, pilot.Age, pilot.Experience, pilot.Team, pilot.IracingID, pilot.CreatedBy).Scan(&id)
-	if err != nil {
-		return 0, err
-	}
-
-	return id, nil
+func NewPilotRepository() *PilotRepository {
+	return &PilotRepository{}
 }
 
-func GetPilots(conn *sql.DB) (pilots []normalizers.Pilot, err error) {
+func (r *PilotRepository) CreatePilot(pilot *models.Piloto) error {
 
-	query := `SELECT id, name, age, experience, team, iracing_id, created_by, created_at FROM pilot`
-
-	rows, err := conn.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var pilot normalizers.Pilot
-		err := rows.Scan(&pilot.ID, &pilot.Name, &pilot.Age, &pilot.Experience, &pilot.Team, &pilot.IracingID, &pilot.CreatedBy, &pilot.CreatedAt)
-		if err != nil {
-			return nil, err
-		}
-		pilots = append(pilots, pilot)
+	result := dbInstance.Create(&pilot)
+	if result.Error != nil {
+		log.Error("Erro ao criar piloto:", result.Error)
+		return result.Error
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, err
+	return nil
+}
+
+func (r *PilotRepository) GetPilots() (pilots []models.Piloto, err error) {
+
+	result := dbInstance.Find(&pilots)
+	if result.Error != nil {
+		log.Error("Erro ao consultar pilotos:", result.Error)
+		return nil, result.Error
 	}
 
 	return pilots, nil
 }
 
-func GetPilotsByFilter(conn *sql.DB, filter normalizers.Pilot) (pilots []normalizers.Pilot, err error) {
+func (r *PilotRepository) GetPilotsByFilter(filter *models.Piloto) (pilots []models.Piloto, err error) {
 
-	query := `SELECT id, name, age, experience, team, iracing_id, created_by, created_at FROM pilot WHERE 1=1`
-	var args []interface{}
-	argID := 1
+	db := dbInstance
+
 	if filter.IracingID != "" {
-		query += ` and iracing_id = $` + strconv.Itoa(argID)
-		args = append(args, filter.IracingID)
-		argID++
+		db = db.Where("iracing_id = ?", filter.IracingID)
 	}
 
-	rows, err := conn.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var pilot normalizers.Pilot
-		err := rows.Scan(&pilot.ID, &pilot.Name, &pilot.Age, &pilot.Experience, &pilot.Team, &pilot.IracingID, &pilot.CreatedBy, &pilot.CreatedAt)
-		if err != nil {
-			return nil, err
-		}
-		pilots = append(pilots, pilot)
+	if filter.Email != "" {
+		db = db.Or("email = ?", filter.Email)
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, err
+	result := db.Find(&pilots)
+	if result.Error != nil {
+		log.Error("Erro ao consultar por filtros:", result.Error)
+		return nil, result.Error
 	}
 
 	return pilots, nil

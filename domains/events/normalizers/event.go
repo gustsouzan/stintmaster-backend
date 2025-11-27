@@ -3,43 +3,28 @@ package normalizers
 import (
 	"log"
 	apin "stintmaster/api/api/v1/events/normalizers"
-	"strconv"
+	"stintmaster/api/integrations/postgres/models"
 	"time"
 )
 
-type Event struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	Platform  string    `json:"platform"`
-	Date      time.Time `json:"date"`
-	Duration  int       `json:"duration"`
-	ImageURL  string    `json:"image_url"`
-	CreatedBy string    `json:"created_by"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-func EventFromPostEvent(postEvent apin.PostEvent, createdAt time.Time) (Event, error) {
+func EventFromPostEvent(postEvent apin.PostEvent) (models.Evento, error) {
 	loc := time.FixedZone("UTC-3", -3*60*60)
 	layout := "2006-01-02"
-	t, err := time.ParseInLocation(layout, postEvent.Date, loc)
+	dataEvento, err := time.ParseInLocation(layout, postEvent.Date, loc)
 	if err != nil {
 		log.Println("Error parsing date:", err)
 	}
-
-	duration, err := strconv.Atoi(postEvent.Duration)
-	if err != nil {
-		log.Println("Error parsing duration:", err)
-		return Event{}, err
-	}
-
-	event := Event{
-		Name:      postEvent.Name,
-		Platform:  postEvent.Platform,
-		Date:      t,
-		Duration:  duration,
-		ImageURL:  postEvent.ImageURL,
-		CreatedBy: postEvent.CreatedBy,
-		CreatedAt: createdAt,
+	event := models.Evento{
+		Nome:       postEvent.Name,
+		Plataforma: postEvent.Platform,
+		DataEvento: dataEvento,
+		Duracao:    postEvent.Duration,
+		Imagem:     postEvent.Image,
+		CreatedBy:  postEvent.CreatedBy,
+		PistaId:    postEvent.TrackId,
+		Classes:    postEvent.Classes,
+		MinPilotos: postEvent.MinDrivers,
+		MaxPilotos: postEvent.MaxDrivers,
 	}
 	return event, nil
 }
