@@ -16,7 +16,7 @@ type Evento struct {
 	Classes    pq.StringArray `gorm:"column:classes;type:text[];not null"`
 	MinPilotos int            `gorm:"column:min_pilotos;not null"`
 	MaxPilotos int            `gorm:"column:max_pilotos;not null"`
-	Imagem     string         `gorm:"column:imagem;size:255"`
+	Imagem     string         `gorm:"column:imagem;type:text"`
 	CreatedBy  string         `gorm:"column:created_by;size:100;not null"`
 	PistaId    uint           `gorm:"column:pista_id;not null"`
 	Pista      Pista          `gorm:"foreignKey:PistaId;references:ID"`
