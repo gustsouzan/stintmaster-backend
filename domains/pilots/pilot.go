@@ -1,32 +1,21 @@
 package pilots
 
 import (
-	"errors"
 	"log"
+	"sort"
 	apin "stintmaster/api/api/v1/pilots/normalizers"
+	"stintmaster/api/domains/carro"
 	"stintmaster/api/domains/pilots/normalizers"
 	"stintmaster/api/integrations/postgres"
 	"stintmaster/api/integrations/postgres/models"
 )
 
-func CreatePilot(pilot apin.PostPilot) (id int64, err error) {
+func CreatePilot(pilot apin.PostPilot) (reqPilot models.Piloto, err error) {
 
-	reqPilot, err := normalizers.PostPilotToModal(pilot)
+	reqPilot, err = normalizers.PostPilotToModal(pilot)
 	if err != nil {
 		log.Println("Error normalizing pilot data:", err)
-		return 0, err
-	}
-
-	pilots, err := GetPilotByFilter(pilot)
-
-	if err != nil {
-		log.Println("Error checking existing pilots:", err)
-		return 0, err
-	}
-
-	if len(pilots) > 0 {
-		log.Println("Pilot already exists with the same name or iRacing ID")
-		return 0, errors.New("pilot already exists with the same name or iRacing ID")
+		return models.Piloto{}, err
 	}
 
 	repository := postgres.NewPilotRepository()
@@ -34,39 +23,70 @@ func CreatePilot(pilot apin.PostPilot) (id int64, err error) {
 
 	if err != nil {
 		log.Println("Error creating pilot in database:", err)
-		return 0, err
+		return models.Piloto{}, err
 	}
 
-	return id, nil
+	return reqPilot, nil
 }
 
-func GetPilots() (pilots []models.Piloto, err error) {
-
-	repository := postgres.NewPilotRepository()
-	pilots, err = repository.GetPilots()
-
+func GetCarSuggestions() ([]normalizers.CarResult, error) {
+	pilots, err := GetPilot()
 	if err != nil {
-		log.Println("Error getting pilots from database:", err)
 		return nil, err
 	}
 
-	return pilots, nil
+	carCount := make(map[uint]int)
+	for _, p := range pilots {
+		for _, c := range p.Carros {
+			carCount[c.ID]++
+		}
+	}
+
+	// Filtra carros com mais de 1 ocorrência
+	type carStat struct {
+		ID  uint
+		Cnt int
+	}
+	var stats []carStat
+	for id, cnt := range carCount {
+		if cnt > 1 {
+			stats = append(stats, carStat{id, cnt})
+		}
+	}
+
+	// Ordena por quantidade decrescente
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Cnt > stats[j].Cnt
+	})
+
+	// Limita aos 3 maiores
+	if len(stats) > 3 {
+		stats = stats[:3]
+	}
+
+	var result []normalizers.CarResult
+	for _, stat := range stats {
+		car, err := carro.GetCarById(stat.ID)
+		if err != nil {
+			log.Println("Error fetching car by ID:", err)
+			continue
+		}
+		result = append(result, normalizers.CarResult{
+			Carro: car,
+			Qtd:   stat.Cnt,
+		})
+	}
+
+	return result, nil
 }
 
-func GetPilotByFilter(pilot apin.PostPilot) (pilots []models.Piloto, err error) {
-
-	reqPilot, err := normalizers.PostPilotToModal(pilot)
-	if err != nil {
-		log.Println("Error normalizing pilot data:", err)
-		return nil, err
-	}
+func GetPilot() ([]models.Piloto, error) {
 	repository := postgres.NewPilotRepository()
-	pilots, err = repository.GetPilotsByFilter(&reqPilot)
+	pilots, err := repository.GetPilot()
 
 	if err != nil {
-		log.Println("Error getting pilots by filter from database:", err)
+		log.Println("Error fetching pilots from database:", err)
 		return nil, err
 	}
-
 	return pilots, nil
 }

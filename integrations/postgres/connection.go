@@ -37,7 +37,7 @@ func OpenConnection() {
 
 	log.Println("Running database migrations...", psqlInfo)
 
-	db.AutoMigrate(&models.Carro{}, &models.Pista{}, &models.Piloto{}, &models.PilotoCarrosDisponiveis{}, &models.Evento{})
+	db.AutoMigrate(&models.Carro{}, &models.Pista{}, &models.Piloto{}, &models.Evento{}, &models.RestricaoHorario{})
 
 	dbInstance = db
 }

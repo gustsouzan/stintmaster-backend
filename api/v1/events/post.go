@@ -9,7 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreateEventHandler(c *fiber.Ctx) error {
+func CreateEvent(c *fiber.Ctx) error {
 
 	var req n.PostEvent
 	if err := c.BodyParser(&req); err != nil {
@@ -27,7 +27,7 @@ func CreateEventHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	id, err := events.CreateEvent(req)
+	event, err := events.CreateEvent(req)
 
 	if err != nil {
 		log.Println("Error creating event:", err)
@@ -37,6 +37,6 @@ func CreateEventHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id": id,
+		"event": event,
 	})
 }

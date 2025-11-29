@@ -1,10 +1,15 @@
 package normalizers
 
+import "time"
+
 type PostPilot struct {
-	Name      string `json:"name" validate:"required"`
-	Email     string `json:"email"`
-	IracingID string `json:"iracing_id" validate:"required"`
-	Image     string `json:"image"`
-	Irating   string `json:"irating"`
-	CreatedBy string `json:"created_by" validate:"required"`
+	Name         string        `json:"name" validate:"required"`
+	Irating      int           `json:"irating"`
+	Cars         []string      `json:"cars"`
+	Restrictions []Restriction `json:"restrictions"`
+}
+
+type Restriction struct {
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
 }
