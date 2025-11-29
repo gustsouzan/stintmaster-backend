@@ -8,7 +8,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func CreatePilotHandler(c *fiber.Ctx) error {
+func CreatePilot(c *fiber.Ctx) error {
 
 	var req normalizers.PostPilot
 	if err := c.BodyParser(&req); err != nil {
@@ -25,7 +25,7 @@ func CreatePilotHandler(c *fiber.Ctx) error {
 		})
 	}
 
-	id, err := pilots.CreatePilot(req)
+	pilot, err := pilots.CreatePilot(req)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
@@ -33,6 +33,6 @@ func CreatePilotHandler(c *fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"id": id,
+		"pilot": pilot,
 	})
 }

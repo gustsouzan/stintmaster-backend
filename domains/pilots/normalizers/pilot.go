@@ -6,20 +6,34 @@ import (
 	"strconv"
 )
 
+type CarResult struct {
+	models.Carro
+	Qtd int
+}
+
 func PostPilotToModal(pilot normalizers.PostPilot) (models.Piloto, error) {
 
-	irating, err := strconv.Atoi(pilot.Irating)
-	if err != nil {
-		return models.Piloto{}, err
-	}
-
 	reqPilot := models.Piloto{
-		Nome:      pilot.Name,
-		Email:     pilot.Email,
-		IracingID: pilot.IracingID,
-		Imagem:    pilot.Image,
-		Irating:   irating,
-		CreatedBy: pilot.CreatedBy,
+		Nome:    pilot.Name,
+		Irating: pilot.Irating,
+		Carros: func() []models.Carro {
+			var cars []models.Carro
+			for _, car := range pilot.Cars {
+				id, _ := strconv.Atoi(car)
+				cars = append(cars, models.Carro{ID: uint(id)})
+			}
+			return cars
+		}(),
+		RestricaoHorario: func() []models.RestricaoHorario {
+			var restrictions []models.RestricaoHorario
+			for _, r := range pilot.Restrictions {
+				restrictions = append(restrictions, models.RestricaoHorario{
+					HoraInicio: r.StartTime,
+					HoraFim:    r.EndTime,
+				})
+			}
+			return restrictions
+		}(),
 	}
 	return reqPilot, nil
 }
