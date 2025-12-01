@@ -17,11 +17,6 @@ func CreateEvent(event apin.PostEvent) (models.Evento, error) {
 		return models.Evento{}, err
 	}
 
-	if err != nil {
-		log.Println("Error checking existing events:", err)
-		return models.Evento{}, err
-	}
-
 	repository := postgres.NewEventRepository()
 	err = repository.CreateEvent(&reqEvent)
 

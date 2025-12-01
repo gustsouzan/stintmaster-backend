@@ -28,16 +28,11 @@ func OpenConnection() {
 		panic(err)
 	}
 
-	tables, err := db.Migrator().GetTables()
+	err = db.AutoMigrate(&models.Carro{}, &models.Pista{}, &models.Piloto{}, &models.Evento{}, &models.RestricaoHorario{})
 	if err != nil {
-		log.Println("Database connection opened successfully, but could not get tables:", err)
-	} else {
-		log.Println("Database connection opened successfully:", tables)
+		log.Println("Error during database migration:", err)
+		panic(err)
 	}
-
-	log.Println("Running database migrations...", psqlInfo)
-
-	db.AutoMigrate(&models.Carro{}, &models.Pista{}, &models.Piloto{}, &models.Evento{}, &models.RestricaoHorario{})
 
 	dbInstance = db
 }

@@ -82,7 +82,7 @@ func GetCarSuggestions() ([]normalizers.CarResult, error) {
 
 func GetPilot() ([]models.Piloto, error) {
 	repository := postgres.NewPilotRepository()
-	pilots, err := repository.GetPilot()
+	pilots, err := repository.GetPilots()
 
 	if err != nil {
 		log.Println("Error fetching pilots from database:", err)

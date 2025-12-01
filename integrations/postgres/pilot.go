@@ -15,19 +15,19 @@ func (r *PilotRepository) CreatePilot(pilot *models.Piloto) error {
 
 	result := dbInstance.Create(&pilot)
 	if result.Error != nil {
-		log.Print("Erro ao criar piloto:", result.Error)
+		log.Print("Error creating pilot:", result.Error)
 		return result.Error
 	}
 
 	return nil
 }
 
-func (r *PilotRepository) GetPilot() ([]models.Piloto, error) {
+func (r *PilotRepository) GetPilots() ([]models.Piloto, error) {
 
 	var pilot []models.Piloto
 	result := dbInstance.Preload("Carros").Find(&pilot)
 	if result.Error != nil {
-		log.Print("Erro ao buscar piloto:", result.Error)
+		log.Print("Error fetching pilots:", result.Error)
 		return nil, result.Error
 	}
 
