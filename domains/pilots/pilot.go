@@ -42,7 +42,7 @@ func GetCarSuggestions() ([]normalizers.CarResult, error) {
 		}
 	}
 
-	// Filtra carros com mais de 1 ocorrência
+	// Filter cars with more than 1 occurrence
 	type carStat struct {
 		ID  uint
 		Cnt int
@@ -54,12 +54,12 @@ func GetCarSuggestions() ([]normalizers.CarResult, error) {
 		}
 	}
 
-	// Ordena por quantidade decrescente
+	// Sort by descending quantity
 	sort.Slice(stats, func(i, j int) bool {
 		return stats[i].Cnt > stats[j].Cnt
 	})
 
-	// Limita aos 3 maiores
+	// Limit to top 3
 	if len(stats) > 3 {
 		stats = stats[:3]
 	}

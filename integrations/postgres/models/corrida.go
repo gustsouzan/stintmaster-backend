@@ -3,7 +3,7 @@ package models
 type Corrida struct {
 	ID           uint           `gorm:"primaryKey;autoIncrement"`
 	EventoID     uint           `gorm:"column:evento_id;not null"`
-	Pilotos      []Piloto       `gorm:"many2many:stint_pilotos;"`
+	Pilotos      []Piloto       `gorm:"foreignKey:CorridaID;references:ID"`
 	StintPilotos []StintPilotos `gorm:"foreignKey:CorridaID;references:ID"`
 }
 
