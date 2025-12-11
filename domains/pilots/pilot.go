@@ -8,6 +8,7 @@ import (
 	"stintmaster/api/domains/pilots/normalizers"
 	"stintmaster/api/integrations/postgres"
 	"stintmaster/api/integrations/postgres/models"
+	"strconv"
 )
 
 func CreatePilot(pilot apin.PostPilot) (reqPilot models.Piloto, err error) {
@@ -86,6 +87,34 @@ func GetPilot() ([]models.Piloto, error) {
 
 	if err != nil {
 		log.Println("Error fetching pilots from database:", err)
+		return nil, err
+	}
+	return pilots, nil
+}
+
+func RemovePilot(id string) error {
+
+	idUint, err := strconv.ParseUint(id, 10, 32)
+	if err != nil {
+		log.Println("Error parsing pilot ID:", err)
+		return err
+	}
+
+	repository := postgres.NewPilotRepository()
+	err = repository.DeletePilot(uint(idUint))
+	if err != nil {
+		log.Println("Error deleting pilot from database:", err)
+		return err
+	}
+	return nil
+}
+
+func GetPilotByCarId(carId int) ([]models.Piloto, error) {
+	repository := postgres.NewPilotRepository()
+	pilots, err := repository.GetPilotByCarId(uint(carId))
+
+	if err != nil {
+		log.Println("Error fetching pilots by car ID from database:", err)
 		return nil, err
 	}
 	return pilots, nil

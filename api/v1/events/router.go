@@ -11,4 +11,5 @@ const (
 func Register(router fiber.Router) {
 
 	router.Post("/", CreateEvent)
+	router.Get("/calculate-Event", CalculateEvent)
 }

@@ -22,7 +22,7 @@ node_modules
 keys/
 
 # Air files
-tmp
+tmp/
 .air.toml
 
 # Goland

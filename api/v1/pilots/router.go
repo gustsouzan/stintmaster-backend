@@ -9,4 +9,6 @@ const (
 func Register(router fiber.Router) {
 
 	router.Post("/", CreatePilot)
+	router.Get("/", GetPilots)
+	router.Delete("/:id", RemovePilot)
 }

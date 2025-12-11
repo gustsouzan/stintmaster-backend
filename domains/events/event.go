@@ -39,3 +39,8 @@ func JoinPilotToEvent(eventID uint, pilotID uint) error {
 
 	return nil
 }
+
+func CalculateEvent() error {
+
+	return nil
+}
