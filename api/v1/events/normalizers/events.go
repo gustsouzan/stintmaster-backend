@@ -7,3 +7,10 @@ type PostEvent struct {
 	MinDrivers int      `json:"minDrivers" validate:"required"`
 	MaxDrivers int      `json:"maxDrivers" validate:"required"`
 }
+
+type CalculateEventRequest struct {
+	PilotID        int     `json:"pilotID" validate:"required"`
+	LapTime        string  `json:"lapTime" validate:"required"`
+	LapConsumption float64 `json:"lapConsumption" validate:"required"`
+	StintMaxLength int     `json:"stintMaxLength" validate:"required"`
+}

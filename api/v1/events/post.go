@@ -40,3 +40,17 @@ func CreateEvent(c *fiber.Ctx) error {
 		"event": event,
 	})
 }
+
+func CalculateEvent(c *fiber.Ctx) error {
+
+	err := events.CalculateEvent()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error": "Failed to calculate event",
+		})
+	}
+
+	return c.Status(fiber.StatusOK).JSON(fiber.Map{
+		"message": "Event calculated successfully",
+	})
+}
