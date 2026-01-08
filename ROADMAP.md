@@ -6,6 +6,20 @@ Branch atual: `refacto/structure`
 ## 1) Visão do produto (resumo)
 O backend deve permitir organizar eventos de endurance (pista, duração, classes), cadastrar pilotos com carros e restrições de horário, montar um grid/roster e gerar (e opcionalmente persistir) um plano de stints consistente e explicável.
 
+### 1.1 Regra do produto: sem sessão (sessionless)
+- Não haverá login/sessão.
+- O front gera uma `eventKey` e **todas as operações** ficam agrupadas/isoladas por esse identificador.
+- `eventKey` funciona como “contexto” do evento (e, na prática, é o mecanismo de separação entre grupos).
+
+**Implicações**
+- Toda entidade relevante deve ter vínculo com a `eventKey` (direto ou indireto): pilotos do evento, inscrições (roster), corrida e stints.
+- Decidir como a `eventKey` viaja na API (recomendação: header `X-Event-Key` para evitar poluir URLs).
+- Definir política de segurança mínima: `eventKey` é segredo compartilhado? expira? pode ser rotacionada?
+
+### 1.2 Fase final: IA (copiloto de estratégia)
+A última fase é integrar IA para sugerir stints e estratégias com base nas informações do evento e de cada piloto (restrições, ritmo, consumo, histórico de stints calculados, etc.).
+
+
 ## 2) Estado atual (o que já existe)
 ### API
 - `GET /api/health`
@@ -19,9 +33,11 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 - Postgres + GORM com `AutoMigrate` em runtime.
 - Seed antigo em `init.sql` e uma migration Goose (`integrations/postgres/migrations/...`) que não bate com os models.
 
-## 3) Objetivos (3-6 semanas)
+
+## 3) Objetivos (3–6 semanas)
 ### P0 (MVP funcional para o front)
 - Reprodutibilidade do banco (schema definido e consistente).
+- Escopo por `eventKey` ponta a ponta (isolamento entre grupos).
 - CRUD mínimo de Pilotos e Eventos + roster (inscrições no evento).
 - Endpoint de “calcular stints” retornando um plano simples e válido.
 
@@ -30,11 +46,16 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 - Testes do domínio/algoritmo + CI.
 - Padronização de erros/contratos de API + documentação.
 
+### P2 (IA)
+- “Copiloto” com sugestões de estratégia e ajustes de stints.
+
+
 ## 4) Princípios de engenharia
 - 1 “fonte de verdade” para o schema do banco.
 - Separar regras de negócio (domínio) de IO (API e repos).
 - Contrato de API estável (sem breaking changes sem versionamento).
-- Entregas pequenas, com critérios de aceite claros.
+- Tudo é multi-grupo por `eventKey` (escopo explícito em todas as operações).
+
 
 ## 5) Milestones por fase
 
@@ -42,28 +63,33 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 **Entrega:** base pronta para desenvolver sem retrabalho.
 - Definir MVP e escopo (o que entra e o que não entra).
 - Definir entidades e campos (Pilot, Car, Track, Event, Race/Corrida, Stint, Availability).
+- Definir o contrato do `eventKey`:
+  - onde trafega (header/body/query)
+  - regras de validação (tamanho/formato)
+  - se é segredo e como evitar vazamento
+  - se tem expiração/rotatividade
 - Decidir estratégia de migrations: **Goose como fonte de verdade** (recomendação) e política para `AutoMigrate` (ex.: apenas dev ou removido).
 - Padronizar contrato de API (erros, validação, naming JSON).
 
 **Critérios de aceite**
-- Existe um documento curto com o modelo de domínio e o contrato de API mínimo.
+- Existe documento curto com: modelo de domínio + padrão do `eventKey` + contrato mínimo de API.
 - Subir ambiente local resulta no mesmo schema sempre.
 
 
-### Milestone 1 — Master Data + CRUD mínimo (Sprint 1 | 1 semana)
-**Entrega:** front consegue operar dados base.
-- Cars/Tracks: confirmar se serão “seed-only” (sem CRUD) ou editáveis.
-- Pilots: completar CRUD mínimo (Create/List/Get/Update/Delete) e garantir persistência correta de carros e restrições.
-- Events: além de Create, implementar ao menos List/Get (Update/Delete opcional no MVP).
+### Milestone 1 — Event scoping + dados base (Sprint 1 | 1 semana)
+**Entrega:** front consegue operar dados base, isolado por `eventKey`.
+- `Events`: criar e consultar evento por `eventKey` (ou listar “dentro do eventKey”).
+- `Pilots`: CRUD mínimo, porém sempre escopado por `eventKey`.
+- Confirmar se `Cars/Tracks` são “seed-only” (globais) ou também escopados.
 
 **Critérios de aceite**
-- Todos endpoints retornam erros em formato consistente.
-- Validação de request body consistente (incluindo campos obrigatórios).
+- Dois `eventKey` diferentes não “enxergam” dados um do outro.
+- Erros e validação seguem padrão consistente.
 
 
 ### Milestone 2 — Roster (inscrição de pilotos no evento) (Sprint 2 | 1 semana)
 **Entrega:** evento tem uma lista de pilotos inscritos.
-- Endpoints de roster: add/remove/list pilotos no evento.
+- Endpoints de roster: add/remove/list pilotos no evento (sempre por `eventKey`).
 - Regras: impedir duplicidade, validar existência, respeitar `min/max drivers`.
 - (Opcional MVP) Checar compatibilidade de carro/classe.
 
@@ -79,7 +105,7 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
   - distribui tempo de pilotagem
   - não excede stint max
   - retorna métricas (tempo por piloto, nº de trocas)
-- (Opcional) Persistir plano em `Corrida/Stint`.
+- (Opcional) Persistir plano em `Corrida/Stint` (sempre vinculado ao `eventKey`).
 
 **Critérios de aceite**
 - Para um evento de teste com 3–6 pilotos e restrições simples, o resultado é sempre válido e reprodutível.
@@ -89,8 +115,24 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 **Entrega:** confiável para uso contínuo.
 - Testes focados do domínio/algoritmo.
 - CI rodando `go test`.
-- Logs estruturados e health melhor (idealmente com checagem de DB).
+- Logs mais consistentes e health melhor (idealmente com checagem de DB).
 - Documentação de API (OpenAPI ou markdown detalhado).
+
+
+### Milestone 5 — IA (Sprint 6+ | 1–2 semanas para primeira versão)
+**Entrega:** sugestões assistidas por IA.
+- Definir o que é “sugestão” (inputs/outputs) sem quebrar a reprodutibilidade:
+  - sugestões de ajustes de stint (troca de ordem, redistribuição)
+  - alertas de conflito com restrições
+  - estratégias baseadas em consumo/ritmo
+- Definir guardrails:
+  - IA não escreve no banco por padrão (apenas recomenda)
+  - saída explicável e auditável (por que sugeriu)
+  - logs e versionamento do prompt/parametrização
+
+**Critérios de aceite**
+- Dada a mesma corrida e dados, a IA gera recomendações claras e não destrutivas.
+
 
 ## 6) Backlog priorizado (Epics → histórias)
 
@@ -99,13 +141,18 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 - A2: Unificar migrations (Goose) e remover duplicidade (init.sql / AutoMigrate).
 - A3: Seed controlado para dev (cars/tracks de exemplo).
 
+### Epic G — `eventKey` e isolamento de dados (P0)
+- G1: Definir padrão de transporte do `eventKey` (header/body/query).
+- G2: Garantir que queries/repos sempre filtrem por `eventKey`.
+- G3: Índices e constraints para evitar cross-event (ex.: unique keys por `eventKey`).
+
 ### Epic B — Pilots (P0)
-- B1: CRUD completo de pilotos.
+- B1: CRUD completo de pilotos (escopado por `eventKey`).
 - B2: Persistir e consultar carros disponíveis do piloto.
 - B3: Persistir e consultar restrições de horário.
 
 ### Epic C — Events (P0)
-- C1: List/Get de eventos.
+- C1: Create + Get/List do evento escopado por `eventKey`.
 - C2: Validar min/max pilotos e classes.
 
 ### Epic D — Roster (P0)
@@ -124,18 +171,27 @@ O backend deve permitir organizar eventos de endurance (pista, duração, classe
 - F3: CI.
 - F4: Docs.
 
+### Epic H — IA (P2)
+- H1: Definir “modo sugestão” (sem escrita) + guardrails.
+- H2: Especificar prompts e fontes de dados do evento/pilotos/stints.
+- H3: Endpoint de sugestões + métricas de utilidade.
+
+
 ## 7) Métricas de sucesso (para guiar decisões)
 - Tempo para configurar ambiente local (target: < 10 min).
-- % de requests validados/normalizados com erro consistente.
+- Isolamento: zero vazamento entre `eventKey`.
 - Reprodutibilidade do cálculo (mesma entrada → mesma saída).
-- Cobertura de testes do domínio do cálculo (não precisa ser alta, mas tem que cobrir invariantes).
+- Cobertura de testes do domínio do cálculo (cobrindo invariantes).
+
 
 ## 8) Riscos e dívidas técnicas atuais (para tratar cedo)
 - Inconsistência entre schema (init.sql / Goose / GORM models) → alto risco de retrabalho.
 - Endpoint `calculate-Event` e domínio de corrida/stint incompletos.
 - README e documentação de API quase inexistentes.
 
-## 9) Decisões em aberto (responder para fechar o escopo)
-1) MVP precisa **persistir** corrida/stints no banco ou é “calcular e retornar”?
-2) É multiusuário (precisa auth/tenant) ou single-admin?
+
+## 9) Decisões em aberto (para fechar o escopo)
+1) O `eventKey` vai trafegar como header (`X-Event-Key`), query ou body?
+2) O MVP precisa **persistir** corrida/stints no banco ou é “calcular e retornar”?
 3) Regras de carro/classe são obrigatórias na lógica do roster/cálculo?
+4) `eventKey` deve expirar/rotacionar ou é permanente?
