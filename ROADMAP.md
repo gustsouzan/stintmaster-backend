@@ -36,7 +36,7 @@ A última fase é integrar IA para sugerir stints e estratégias com base nas in
 
 ## 3) Objetivos (3–6 semanas)
 ### P0 (MVP funcional para o front)
-- Reprodutibilidade do banco (schema definido e consistente).
+- Reprodutibilidade do banco (**schema definido e consistente via AutoMigrate do GORM**).
 - Escopo por `eventKey` ponta a ponta (isolamento entre grupos).
 - CRUD mínimo de Pilotos e Eventos + roster (inscrições no evento).
 - Endpoint de “calcular stints” retornando um plano simples e válido.
@@ -137,8 +137,8 @@ A última fase é integrar IA para sugerir stints e estratégias com base nas in
 ## 6) Backlog priorizado (Epics → histórias)
 
 ### Epic A — Banco e consistência de schema (P0)
-- A1: Definir schema final (tabelas/colunas/relacionamentos).
-- A2: Unificar migrations (Goose) e remover duplicidade (init.sql / AutoMigrate).
+- A1: Definir schema final nos models GORM.
+- A2: **Remover scripts Goose/init.sql e padronizar AutoMigrate como única fonte de verdade.**
 - A3: Seed controlado para dev (cars/tracks de exemplo).
 
 ### Epic G — `eventKey` e isolamento de dados (P0)
@@ -185,7 +185,7 @@ A última fase é integrar IA para sugerir stints e estratégias com base nas in
 
 
 ## 8) Riscos e dívidas técnicas atuais (para tratar cedo)
-- Inconsistência entre schema (init.sql / Goose / GORM models) → alto risco de retrabalho.
+- Inconsistência entre schema (**remover Goose/init.sql, padronizar AutoMigrate**).
 - Endpoint `calculate-Event` e domínio de corrida/stint incompletos.
 - README e documentação de API quase inexistentes.
 
